@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Task Heroes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1B1B3A">
+<title>Task Heroes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Baloo+2:wght@500;700;800&family=Space+Mono&display=swap');
+
+:root{
+  --ink:#1B1B3A;
+  --hero-red:#E63946;
+  --sunshine:#FFD23F;
+  --teal:#2EC4B6;
+  --paper:#FFF8E7;
+  --purple:#7B2CBF;
+  --line:#0F0F26;
+  --lock-gray:#9a9a9a;
+}
+
+*{box-sizing:border-box;}
+
+body{
+  margin:0;
+  font-family:'Baloo 2', sans-serif;
+  background-color:var(--ink);
+  background-image:radial-gradient(circle, rgba(255,255,255,0.07) 1.4px, transparent 1.4px);
+  background-size:16px 16px;
+  color:var(--paper);
+  min-height:100vh;
+  padding-bottom:60px;
+}
+
+.wrap{max-width:960px;margin:0 auto;padding:24px 16px;}
+
+header{text-align:center;margin-bottom:22px;}
+.logo{
+  font-family:'Bangers', cursive;
+  font-size:60px;
+  letter-spacing:2px;
+  color:var(--sunshine);
+  -webkit-text-stroke:3px var(--line);
+  text-shadow:5px 5px 0 var(--hero-red);
+  transform:rotate(-2deg);
+  margin:0;
+  line-height:1;
+}
+.tagline{font-weight:700;color:var(--paper);opacity:0.9;margin-top:8px;font-size:14px;}
+
+.rule-banner{
+  background:var(--sunshine);color:var(--ink);border:3px solid var(--line);
+  border-radius:12px;padding:12px 16px;font-weight:800;text-align:center;
+  max-width:640px;margin:16px auto 0;box-shadow:5px 5px 0 rgba(0,0,0,0.3);
+  font-size:14.5px;
+}
+
+.panel{
+  background:var(--paper);color:var(--ink);
+  border:4px solid var(--line);border-radius:14px;
+  padding:20px;margin-bottom:22px;
+  box-shadow:8px 8px 0 rgba(0,0,0,0.35);
+}
+
+.section-title{
+  font-family:'Bangers', cursive;font-size:24px;letter-spacing:1px;
+  margin:0 0 14px 0;color:var(--ink);
+}
+
+.today-label{font-weight:800;font-size:13px;text-transform:uppercase;color:var(--purple);letter-spacing:1px;margin-bottom:2px;}
+
+.day-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.day-tab{
+  font-family:'Baloo 2';font-weight:800;font-size:12.5px;
+  background:#fff;border:2px solid var(--line);border-radius:8px;
+  padding:6px 10px;cursor:pointer;
+}
+.day-tab.active{background:var(--purple);color:#fff;}
+.day-tab .d{display:block;font-size:10px;opacity:.75;font-family:'Space Mono',monospace;}
+
+.heroes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+
+.hero-card{border:3px solid var(--line);border-radius:12px;padding:14px;background:#fff;}
+.hero-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.hero-title{font-family:'Bangers',cursive;font-size:26px;}
+.hero-title.kaio{color:var(--hero-red);}
+.hero-title.luca{color:var(--teal);}
+
+.status-pill{
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
+  border:2px solid var(--line);border-radius:20px;padding:5px 10px;
+}
+.status-pill.locked{background:#eee;color:var(--lock-gray);}
+.status-pill.unlocked{background:var(--teal);color:var(--ink);}
+
+.task{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border:2px solid var(--line);border-radius:10px;
+  padding:8px 10px;margin-bottom:8px;background:#FFFCF3;
+}
+.task .box{
+  width:32px;height:32px;flex:0 0 32px;border:2px solid var(--line);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-weight:800;cursor:pointer;background:#fff;font-size:16px;
+}
+.task.done .box{background:var(--sunshine);}
+.task .label{flex:1 1 140px;font-weight:700;font-size:14px;min-width:0;}
+.task.done .label{opacity:.7;}
+.confer-btn{
+  font-family:'Baloo 2';font-weight:800;font-size:12px;
+  border:2px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;
+  background:#fff;white-space:nowrap;
+}
+.confer-btn.waiting{background:#FFE9A8;}
+.confer-btn.confirmed{background:var(--teal);color:var(--ink);cursor:default;}
+.confer-btn:disabled{opacity:.45;cursor:not-allowed;}
+
+.schedule-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
+.schedule-table th,.schedule-table td{border:2px solid var(--line);padding:8px;vertical-align:top;text-align:left;}
+.schedule-table th{background:var(--purple);color:#fff;font-family:'Bangers',cursive;font-size:15px;letter-spacing:.5px;}
+.schedule-table td ul{margin:0;padding-left:16px;}
+.schedule-table td li{margin-bottom:3px;}
+.schedule-table tr:nth-child(even) td{background:#FFFCF3;}
+
+.rules-list{list-style:none;padding:0;margin:0;}
+.rules-list li{padding:7px 0;border-bottom:2px dashed #ccc;font-weight:700;font-size:14px;}
+.rules-list li:last-child{border-bottom:none;}
+
+.footer-actions{display:flex;justify-content:center;margin-top:6px;}
+button.big{
+  font-family:'Baloo 2';font-weight:800;font-size:13px;
+  background:#fff;color:var(--ink);border:3px solid var(--line);
+  border-radius:10px;padding:9px 16px;cursor:pointer;
+}
+
+@media (max-width:520px){
+  .logo{font-size:42px;}
+  .hero-title{font-size:20px;}
+  .wrap{padding:16px 10px;}
+  .panel{padding:14px;}
+  .confer-btn{flex:1 1 100%;text-align:center;}
+  .rule-banner{font-size:13px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1 class="logo">TASK HEROES</h1>
+    <p class="tagline">Quadro de tarefas da semana — Kaio &amp; Luca</p>
+    <div class="rule-banner">💻 O computador só é liberado depois que TODAS as tarefas do dia forem concluídas e conferidas.</div>
+  </header>
+
+  <div class="panel" id="loadingPanel"><p style="font-style:italic;opacity:.7;">Carregando o quadro...</p></div>
+
+  <div id="app" style="display:none;">
+
+    <div class="panel">
+      <div class="today-label" id="todayLabel"></div>
+      <h2 class="section-title">Missões do dia</h2>
+      <div class="day-tabs" id="dayTabs"></div>
+      <div class="heroes-grid" id="heroesGrid"></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="section-title">Quadro completo da semana</h2>
+      <div style="overflow-x:auto;">
+        <table class="schedule-table" id="scheduleTable"></table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="section-title">Regras</h2>
+      <ul class="rules-list">
+        <li>✅ Todas as tarefas precisam ser concluídas.</li>
+        <li>✅ As tarefas serão conferidas antes de ligar o computador.</li>
+        <li>🎮 Computador liberado somente após a conclusão de todas as tarefas do dia.</li>
+        <li>🤝 Quem terminar pode ajudar o irmão, mas cada um é responsável pelas suas próprias tarefas.</li>
+      </ul>
+    </div>
+
+    <div class="footer-actions">
+      <button class="big" id="resetDayBtn">Reiniciar marcações do dia selecionado</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DAY_NAMES = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+const LIST_A = ['Colocar comida para os cachorros 🐶','Limpar os cocôs 💩','Arrumar a sala 🛋️','Limpar o gabinete 🖥️','Tirar as roupas do 2º varal 🧺','Lavar a louça 🍽️'];
+const LIST_B = ['Limpar o banheiro 🚽','Varrer a casa 🧹','Pendurar as roupas 🧺','Limpar o gabinete 🖥️'];
+const SUNDAY_LIST = ['Organização geral 🧹','Recolher um varal 🧺'];
+
+const SCHEDULE = {
+  'Segunda': { Kaio: LIST_A, Luca: LIST_B },
+  'Terça':   { Kaio: LIST_B, Luca: LIST_A },
+  'Quarta':  { Kaio: LIST_A, Luca: LIST_B },
+  'Quinta':  { Kaio: LIST_B, Luca: LIST_A },
+  'Sexta':   { Kaio: LIST_A, Luca: LIST_B },
+  'Sábado':  { Kaio: LIST_B, Luca: LIST_A },
+  'Domingo': { Kaio: SUNDAY_LIST, Luca: SUNDAY_LIST }
+};
+
+function mondayOfCurrentWeek(){
+  const d = new Date();
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diff);
+  monday.setHours(0,0,0,0);
+  return monday;
+}
+
+function dateStr(d){ return d.toISOString().slice(0,10); }
+
+const WEEK_ORDER = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const monday = mondayOfCurrentWeek();
+const WEEK_DATES = {};
+WEEK_ORDER.forEach((name,i)=>{
+  const d = new Date(monday);
+  d.setDate(monday.getDate()+i);
+  WEEK_DATES[name] = dateStr(d);
+});
+
+function todayName(){
+  const idx = new Date().getDay();
+  return DAY_NAMES[idx];
+}
+
+let selectedDay = todayName();
+let state = {};
+
+async function loadDay(){
+  const key = 'tasks:' + WEEK_DATES[selectedDay];
+  try{
+    const r = await window.storage.get(key, true);
+    state = r ? JSON.parse(r.value) : {};
+  }catch(e){ state = {}; }
+  document.getElementById('loadingPanel').style.display='none';
+  document.getElementById('app').style.display='block';
+  render();
+}
+
+async function saveDay(){
+  const key = 'tasks:' + WEEK_DATES[selectedDay];
+  try{ await window.storage.set(key, JSON.stringify(state), true); }catch(e){}
+}
+
+function taskKey(hero, idx){ return hero+'_'+idx; }
+
+function toggleDone(hero, idx){
+  const k = taskKey(hero, idx);
+  if(!state[k]) state[k] = {done:false, confirmed:false};
+  state[k].done = !state[k].done;
+  if(!state[k].done) state[k].confirmed = false;
+  saveDay();
+  render();
+}
+
+function toggleConfirm(hero, idx){
+  const k = taskKey(hero, idx);
+  if(!state[k] || !state[k].done) return;
+  state[k].confirmed = !state[k].confirmed;
+  saveDay();
+  render();
+}
+
+async function resetDay(){
+  if(!confirm('Reiniciar todas as marcações de '+selectedDay+' ('+WEEK_DATES[selectedDay]+')?')) return;
+  state = {};
+  await saveDay();
+  render();
+}
+
+function renderDayTabs(){
+  const wrap = document.getElementById('dayTabs');
+  wrap.innerHTML='';
+  WEEK_ORDER.forEach(name=>{
+    const tab = document.createElement('div');
+    tab.className = 'day-tab' + (name===selectedDay ? ' active':'');
+    tab.innerHTML = name + '<span class="d">'+WEEK_DATES[name].slice(5)+'</span>';
+    tab.onclick = ()=>{ selectedDay = name; loadDay(); };
+    wrap.appendChild(tab);
+  });
+}
+
+function renderHeroCard(hero, className){
+  const tasks = SCHEDULE[selectedDay][hero];
+  const card = document.createElement('div');
+  card.className = 'hero-card';
+
+  let confirmedCount = 0;
+  tasks.forEach((t,idx)=>{
+    const k = taskKey(hero, idx);
+    if(state[k] && state[k].confirmed) confirmedCount++;
+  });
+  const allConfirmed = tasks.length>0 && confirmedCount===tasks.length;
+
+  const head = document.createElement('div');
+  head.className='hero-card-head';
+  head.innerHTML = `<span class="hero-title ${className}">${hero}</span>
+    <span class="status-pill ${allConfirmed?'unlocked':'locked'}">${allConfirmed?'🎮 Liberado':'🔒 Faltam '+(tasks.length-confirmedCount)}</span>`;
+  card.appendChild(head);
+
+  tasks.forEach((label,idx)=>{
+    const k = taskKey(hero, idx);
+    const st = state[k] || {done:false, confirmed:false};
+    const row = document.createElement('div');
+    row.className = 'task' + (st.done ? ' done':'');
+    const box = document.createElement('div');
+    box.className='box';
+    box.textContent = st.done ? '✓' : '';
+    box.onclick = ()=>toggleDone(hero, idx);
+    const lbl = document.createElement('div');
+    lbl.className='label';
+    lbl.textContent = label;
+    const btn = document.createElement('button');
+    btn.className = 'confer-btn ' + (st.confirmed ? 'confirmed' : (st.done ? 'waiting' : ''));
+    btn.textContent = st.confirmed ? 'Conferido ✓' : 'Conferir';
+    btn.disabled = !st.done;
+    btn.onclick = ()=>toggleConfirm(hero, idx);
+    row.appendChild(box);
+    row.appendChild(lbl);
+    row.appendChild(btn);
+    card.appendChild(row);
+  });
+
+  return card;
+}
+
+function renderScheduleTable(){
+  const table = document.getElementById('scheduleTable');
+  let html = '<tr><th>Dia</th><th>Kaio</th><th>Luca</th></tr>';
+  WEEK_ORDER.forEach(name=>{
+    const c = SCHEDULE[name].Kaio.map(t=>'<li>'+t+'</li>').join('');
+    const l = SCHEDULE[name].Luca.map(t=>'<li>'+t+'</li>').join('');
+    html += `<tr><td><b>${name}</b></td><td><ul>${c}</ul></td><td><ul>${l}</ul></td></tr>`;
+  });
+  table.innerHTML = html;
+}
+
+function render(){
+  document.getElementById('todayLabel').textContent = 'Exibindo: ' + selectedDay + ' (' + WEEK_DATES[selectedDay] + ')' + (selectedDay===todayName() ? ' — hoje':'');
+  renderDayTabs();
+  const grid = document.getElementById('heroesGrid');
+  grid.innerHTML='';
+  grid.appendChild(renderHeroCard('Kaio','kaio'));
+  grid.appendChild(renderHeroCard('Luca','luca'));
+  renderScheduleTable();
+}
+
+document.getElementById('resetDayBtn').onclick = resetDay;
+
+loadDay();
+</script>
+</body>
+</html>
