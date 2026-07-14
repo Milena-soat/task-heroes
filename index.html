@@ -52,6 +52,20 @@ header{text-align:center;margin-bottom:22px;}
 }
 .tagline{font-weight:700;color:var(--paper);opacity:0.9;margin-top:8px;font-size:14px;}
 
+.config-warning{
+  background:var(--hero-red);color:#fff;border:3px solid var(--line);
+  border-radius:12px;padding:14px 16px;font-weight:700;text-align:center;
+  max-width:640px;margin:16px auto 0;font-size:13.5px;
+}
+.admin-btn{
+  font-family:'Baloo 2';font-weight:800;font-size:12.5px;
+  border:2px solid var(--line);border-radius:20px;padding:6px 14px;cursor:pointer;
+}
+.admin-btn.off{background:#fff;color:var(--ink);}
+.admin-btn.on{background:var(--hero-red);color:#fff;}
+
+.waiting-label{font-family:'Baloo 2';font-weight:700;font-size:11.5px;color:var(--lock-gray);white-space:nowrap;}
+
 .rule-banner{
   background:var(--sunshine);color:var(--ink);border:3px solid var(--line);
   border-radius:12px;padding:12px 16px;font-weight:800;text-align:center;
@@ -153,9 +167,11 @@ button.big{
     <h1 class="logo">TASK HEROES</h1>
     <p class="tagline">Quadro de tarefas da semana — Kaio &amp; Luca</p>
     <div class="rule-banner">💻 O computador só é liberado depois que TODAS as tarefas do dia forem concluídas e conferidas.</div>
+    <div class="admin-bar"><button class="admin-btn off" id="adminBtn">🔐 Modo Administrador</button></div>
   </header>
 
   <div class="panel" id="loadingPanel"><p style="font-style:italic;opacity:.7;">Carregando o quadro...</p></div>
+  <div class="config-warning" id="configWarning" style="display:none;">⚠️ O banco de dados ainda não foi configurado. As marcações não estão sendo salvas nem sincronizadas entre celulares. Peça pra quem administra o site configurar o Firebase (veja o código).</div>
 
   <div id="app" style="display:none;">
 
@@ -190,7 +206,31 @@ button.big{
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
+// ⚠️ COLE AQUI o objeto firebaseConfig que o Firebase te dá ao criar o app Web.
+// Passo a passo em: https://console.firebase.google.com
+const firebaseConfig = {
+  apiKey: "AIzaSyBxMRw9sL9zWmjqG-7VTOoreFiriGh_vBg",
+  authDomain: "task-heroes-4aa8f.firebaseapp.com",
+  databaseURL: "https://task-heroes-4aa8f-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "task-heroes-4aa8f",
+  storageBucket: "task-heroes-4aa8f.firebasestorage.app",
+  messagingSenderId: "61782012034",
+  appId: "1:61782012034:web:739da14cde234efadcc49b"
+};
+
+let db = null;
+let firebaseReady = false;
+try{
+  if(firebaseConfig.apiKey !== "COLE_AQUI"){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    firebaseReady = true;
+  }
+}catch(e){ firebaseReady = false; }
+
 const DAY_NAMES = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 
 const LIST_A = ['Colocar comida para os cachorros 🐶','Limpar os cocôs 💩','Arrumar a sala 🛋️','Limpar o gabinete 🖥️','Tirar as roupas do 2º varal 🧺','Lavar a louça 🍽️'];
@@ -233,23 +273,42 @@ function todayName(){
   return DAY_NAMES[idx];
 }
 
+const ADMIN_PASSWORD = '7740';
+let isAdmin = false;
+
 let selectedDay = todayName();
 let state = {};
 
-async function loadDay(){
-  const key = 'tasks:' + WEEK_DATES[selectedDay];
-  try{
-    const r = await window.storage.get(key, true);
-    state = r ? JSON.parse(r.value) : {};
-  }catch(e){ state = {}; }
-  document.getElementById('loadingPanel').style.display='none';
-  document.getElementById('app').style.display='block';
-  render();
+let currentRef = null;
+
+function attachDayListener(){
+  if(currentRef) currentRef.off();
+  document.getElementById('configWarning').style.display = firebaseReady ? 'none' : 'block';
+
+  if(!firebaseReady){
+    state = {};
+    document.getElementById('loadingPanel').style.display='none';
+    document.getElementById('app').style.display='block';
+    render();
+    return;
+  }
+
+  currentRef = db.ref('taskheroes/' + WEEK_DATES[selectedDay]);
+  currentRef.on('value', snap=>{
+    state = snap.val() || {};
+    document.getElementById('loadingPanel').style.display='none';
+    document.getElementById('app').style.display='block';
+    render();
+  }, err=>{
+    document.getElementById('loadingPanel').style.display='none';
+    document.getElementById('app').style.display='block';
+    render();
+  });
 }
 
-async function saveDay(){
-  const key = 'tasks:' + WEEK_DATES[selectedDay];
-  try{ await window.storage.set(key, JSON.stringify(state), true); }catch(e){}
+function saveDay(){
+  if(!firebaseReady || !currentRef) return;
+  currentRef.set(state).catch(()=>{});
 }
 
 function taskKey(hero, idx){ return hero+'_'+idx; }
@@ -264,6 +323,7 @@ function toggleDone(hero, idx){
 }
 
 function toggleConfirm(hero, idx){
+  if(!isAdmin) return;
   const k = taskKey(hero, idx);
   if(!state[k] || !state[k].done) return;
   state[k].confirmed = !state[k].confirmed;
@@ -271,7 +331,24 @@ function toggleConfirm(hero, idx){
   render();
 }
 
+function toggleAdmin(){
+  if(isAdmin){
+    isAdmin = false;
+    render();
+    return;
+  }
+  const pass = prompt('Senha do administrador:');
+  if(pass === null) return;
+  if(pass === ADMIN_PASSWORD){
+    isAdmin = true;
+    render();
+  }else{
+    alert('Senha incorreta.');
+  }
+}
+
 async function resetDay(){
+  if(!isAdmin){ alert('Entre no modo administrador para reiniciar as tarefas.'); return; }
   if(!confirm('Reiniciar todas as marcações de '+selectedDay+' ('+WEEK_DATES[selectedDay]+')?')) return;
   state = {};
   await saveDay();
@@ -285,7 +362,7 @@ function renderDayTabs(){
     const tab = document.createElement('div');
     tab.className = 'day-tab' + (name===selectedDay ? ' active':'');
     tab.innerHTML = name + '<span class="d">'+WEEK_DATES[name].slice(5)+'</span>';
-    tab.onclick = ()=>{ selectedDay = name; loadDay(); };
+    tab.onclick = ()=>{ selectedDay = name; attachDayListener(); };
     wrap.appendChild(tab);
   });
 }
@@ -320,14 +397,27 @@ function renderHeroCard(hero, className){
     const lbl = document.createElement('div');
     lbl.className='label';
     lbl.textContent = label;
-    const btn = document.createElement('button');
-    btn.className = 'confer-btn ' + (st.confirmed ? 'confirmed' : (st.done ? 'waiting' : ''));
-    btn.textContent = st.confirmed ? 'Conferido ✓' : 'Conferir';
-    btn.disabled = !st.done;
-    btn.onclick = ()=>toggleConfirm(hero, idx);
     row.appendChild(box);
     row.appendChild(lbl);
-    row.appendChild(btn);
+
+    if(isAdmin){
+      const btn = document.createElement('button');
+      btn.className = 'confer-btn ' + (st.confirmed ? 'confirmed' : (st.done ? 'waiting' : ''));
+      btn.textContent = st.confirmed ? 'Conferido ✓' : 'Conferir';
+      btn.disabled = !st.done;
+      btn.onclick = ()=>toggleConfirm(hero, idx);
+      row.appendChild(btn);
+    }else if(st.confirmed){
+      const tag = document.createElement('span');
+      tag.className='waiting-label';
+      tag.textContent = '✅ Conferido';
+      row.appendChild(tag);
+    }else if(st.done){
+      const tag = document.createElement('span');
+      tag.className='waiting-label';
+      tag.textContent = '⏳ Aguardando responsável';
+      row.appendChild(tag);
+    }
     card.appendChild(row);
   });
 
@@ -346,7 +436,12 @@ function renderScheduleTable(){
 }
 
 function render(){
+  const adminBtn = document.getElementById('adminBtn');
+  adminBtn.className = 'admin-btn ' + (isAdmin ? 'on' : 'off');
+  adminBtn.textContent = isAdmin ? '🔓 Sair do modo admin' : '🔐 Modo Administrador';
+
   document.getElementById('todayLabel').textContent = 'Exibindo: ' + selectedDay + ' (' + WEEK_DATES[selectedDay] + ')' + (selectedDay===todayName() ? ' — hoje':'');
+  document.getElementById('resetDayBtn').style.display = isAdmin ? 'inline-block' : 'none';
   renderDayTabs();
   const grid = document.getElementById('heroesGrid');
   grid.innerHTML='';
@@ -356,8 +451,9 @@ function render(){
 }
 
 document.getElementById('resetDayBtn').onclick = resetDay;
+document.getElementById('adminBtn').onclick = toggleAdmin;
 
-loadDay();
+attachDayListener();
 </script>
 </body>
 </html>
